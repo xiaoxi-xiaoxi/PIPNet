@@ -9,8 +9,12 @@ import time
 from scipy.integrate import simps
 
 
-def get_label(data_name, label_file, task_type=None):
-    label_path = os.path.join('data', data_name, label_file)
+def get_label(data_name, label_file, task_type=None,root_folder=None):
+    if root_folder:
+        label_path = os.path.join(root_folder, data_name, label_file)
+    else:
+        label_path = os.path.join('data', data_name, label_file)
+
     with open(label_path, 'r') as f:
         labels = f.readlines()
     labels = [x.strip().split() for x in labels]

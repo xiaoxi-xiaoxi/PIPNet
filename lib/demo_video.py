@@ -8,7 +8,7 @@ import importlib
 from math import floor
 from faceboxes_detector import *
 import time
-
+# from FaceBoxesV2.faceboxes_detector import *
 import torch
 import torch.nn as nn
 import torch.nn.parallel

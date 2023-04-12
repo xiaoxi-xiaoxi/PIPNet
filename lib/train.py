@@ -1,5 +1,6 @@
 import cv2, os
 import sys
+
 sys.path.insert(0, '..')
 import numpy as np
 from PIL import Image
@@ -18,7 +19,7 @@ import torchvision.models as models
 
 from networks import *
 import data_utils
-from functions import * 
+from functions import *
 from mobilenetv3 import mobilenetv3_large
 
 if not len(sys.argv) == 2:
@@ -34,6 +35,10 @@ Config = getattr(my_config, 'Config')
 cfg = Config()
 cfg.experiment_name = experiment_name
 cfg.data_name = data_name
+
+##数据目录，到数据集名称之前的路径
+# root_folder = r'C:\Users\wangyuan\Desktop\program\dataset\gesture'
+root_folder = r'/data/wangyuan/dataset/'
 
 os.environ['CUDA_VISIBLE_DEVICES'] = str(cfg.gpu_id)
 
@@ -99,17 +104,19 @@ logging.info('###########################################')
 if cfg.det_head == 'pip':
     meanface_indices, _, _, _ = get_meanface(os.path.join('data', cfg.data_name, 'meanface.txt'), cfg.num_nb)
 
-
 if cfg.det_head == 'pip':
     if cfg.backbone == 'resnet18':
         resnet18 = models.resnet18(pretrained=cfg.pretrained)
-        net = Pip_resnet18(resnet18, cfg.num_nb, num_lms=cfg.num_lms, input_size=cfg.input_size, net_stride=cfg.net_stride)
+        net = Pip_resnet18(resnet18, cfg.num_nb, num_lms=cfg.num_lms, input_size=cfg.input_size,
+                           net_stride=cfg.net_stride)
     elif cfg.backbone == 'resnet50':
         resnet50 = models.resnet50(pretrained=cfg.pretrained)
-        net = Pip_resnet50(resnet50, cfg.num_nb, num_lms=cfg.num_lms, input_size=cfg.input_size, net_stride=cfg.net_stride)
+        net = Pip_resnet50(resnet50, cfg.num_nb, num_lms=cfg.num_lms, input_size=cfg.input_size,
+                           net_stride=cfg.net_stride)
     elif cfg.backbone == 'resnet101':
         resnet101 = models.resnet101(pretrained=cfg.pretrained)
-        net = Pip_resnet101(resnet101, cfg.num_nb, num_lms=cfg.num_lms, input_size=cfg.input_size, net_stride=cfg.net_stride)
+        net = Pip_resnet101(resnet101, cfg.num_nb, num_lms=cfg.num_lms, input_size=cfg.input_size,
+                            net_stride=cfg.net_stride)
     elif cfg.backbone == 'mobilenet_v2':
         mbnet = models.mobilenet_v2(pretrained=cfg.pretrained)
         net = Pip_mbnetv2(mbnet, cfg.num_nb, num_lms=cfg.num_lms, input_size=cfg.input_size, net_stride=cfg.net_stride)
@@ -149,24 +156,41 @@ else:
 
 points_flip = None
 if cfg.data_name == 'data_300W':
-    points_flip = [17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 28, 29, 30, 31, 36, 35, 34, 33, 32, 46, 45, 44, 43, 48, 47, 40, 39, 38, 37, 42, 41, 55, 54, 53, 52, 51, 50, 49, 60, 59, 58, 57, 56, 65, 64, 63, 62, 61, 68, 67, 66]
-    points_flip = (np.array(points_flip)-1).tolist()
+    points_flip = [17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18,
+                   28, 29, 30, 31, 36, 35, 34, 33, 32, 46, 45, 44, 43, 48, 47, 40, 39, 38, 37, 42, 41, 55, 54, 53, 52,
+                   51, 50, 49, 60, 59, 58, 57, 56, 65, 64, 63, 62, 61, 68, 67, 66]
+    points_flip = (np.array(points_flip) - 1).tolist()
     assert len(points_flip) == 68
 elif cfg.data_name == 'WFLW':
-    points_flip = [32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 46, 45, 44, 43, 42, 50, 49, 48, 47, 37, 36, 35, 34, 33, 41, 40, 39, 38, 51, 52, 53, 54, 59, 58, 57, 56, 55, 72, 71, 70, 69, 68, 75, 74, 73, 64, 63, 62, 61, 60, 67, 66, 65, 82, 81, 80, 79, 78, 77, 76, 87, 86, 85, 84, 83, 92, 91, 90, 89, 88, 95, 94, 93, 97, 96]
+    points_flip = [32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7,
+                   6, 5, 4, 3, 2, 1, 0, 46, 45, 44, 43, 42, 50, 49, 48, 47, 37, 36, 35, 34, 33, 41, 40, 39, 38, 51, 52,
+                   53, 54, 59, 58, 57, 56, 55, 72, 71, 70, 69, 68, 75, 74, 73, 64, 63, 62, 61, 60, 67, 66, 65, 82, 81,
+                   80, 79, 78, 77, 76, 87, 86, 85, 84, 83, 92, 91, 90, 89, 88, 95, 94, 93, 97, 96]
     assert len(points_flip) == 98
 elif cfg.data_name == 'COFW':
-    points_flip = [2, 1, 4, 3, 7, 8, 5, 6, 10, 9, 12, 11, 15, 16, 13, 14, 18, 17, 20, 19, 21, 22, 24, 23, 25, 26, 27, 28, 29]
-    points_flip = (np.array(points_flip)-1).tolist()
+    points_flip = [2, 1, 4, 3, 7, 8, 5, 6, 10, 9, 12, 11, 15, 16, 13, 14, 18, 17, 20, 19, 21, 22, 24, 23, 25, 26, 27,
+                   28, 29]
+    points_flip = (np.array(points_flip) - 1).tolist()
     assert len(points_flip) == 29
 elif cfg.data_name == 'AFLW':
     points_flip = [6, 5, 4, 3, 2, 1, 12, 11, 10, 9, 8, 7, 15, 14, 13, 18, 17, 16, 19]
-    points_flip = (np.array(points_flip)-1).tolist()
+    points_flip = (np.array(points_flip) - 1).tolist()
     assert len(points_flip) == 19
 elif cfg.data_name == 'LaPa':
-    points_flip = [33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 47, 46, 45, 44, 43, 51, 50, 49, 48, 38, 37, 36, 35, 34, 42, 41, 40, 39, 52, 53, 54, 55, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 80, 79, 78, 77, 76, 83, 82, 81, 84, 71, 70, 69, 68, 67, 74, 73, 72, 75, 91, 90, 89, 88, 87, 86, 85, 96, 95, 94, 93, 92, 101, 100, 99, 98, 97, 104, 103, 102, 106, 105]
-    points_flip = (np.array(points_flip)-1).tolist()
+    points_flip = [33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8,
+                   7, 6, 5, 4, 3, 2, 1, 47, 46, 45, 44, 43, 51, 50, 49, 48, 38, 37, 36, 35, 34, 42, 41, 40, 39, 52, 53,
+                   54, 55, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 80, 79, 78, 77, 76, 83, 82, 81, 84, 71, 70, 69,
+                   68, 67, 74, 73, 72, 75, 91, 90, 89, 88, 87, 86, 85, 96, 95, 94, 93, 92, 101, 100, 99, 98, 97, 104,
+                   103, 102, 106, 105]
+    points_flip = (np.array(points_flip) - 1).tolist()
     assert len(points_flip) == 106
+## hand!!!
+elif cfg.data_name == 'HaGRID_mini':
+    ### points_flip是左右翻转之后人脸关键点顺序的重新定义
+    points_flip = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+    points_flip = (np.array(points_flip) - 1).tolist()
+    assert len(points_flip) == 21
+
 else:
     print('No such data!')
     exit(0)
@@ -174,27 +198,37 @@ else:
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
 
-if cfg.pretrained:  
+if cfg.pretrained:
     optimizer = optim.Adam(net.parameters(), lr=cfg.init_lr)
 else:
     optimizer = optim.Adam(net.parameters(), lr=cfg.init_lr, weight_decay=5e-4)
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=cfg.decay_steps, gamma=0.1)
 
-labels = get_label(cfg.data_name, 'train.txt')
+labels = get_label(cfg.data_name, 'train.txt', root_folder=root_folder)
 
 if cfg.det_head == 'pip':
-    train_data = data_utils.ImageFolder_pip(os.path.join('data', cfg.data_name, 'images_train'), 
-                                              labels, cfg.input_size, cfg.num_lms, 
-                                              cfg.net_stride, points_flip, meanface_indices,
-                                              transforms.Compose([
-                                              transforms.RandomGrayscale(0.2),
-                                              transforms.ToTensor(),
-                                              normalize]))
+    if root_folder:
+        train_data = data_utils.ImageFolder_pip(os.path.join(root_folder, cfg.data_name, 'images_train'),
+                                                labels, cfg.input_size, cfg.num_lms,
+                                                cfg.net_stride, points_flip, meanface_indices,
+                                                transforms.Compose([
+                                                    transforms.RandomGrayscale(0.2),
+                                                    transforms.ToTensor(),
+                                                    normalize]))
+    else:
+        train_data = data_utils.ImageFolder_pip(os.path.join('data', cfg.data_name, 'images_train'),
+                                                labels, cfg.input_size, cfg.num_lms,
+                                                cfg.net_stride, points_flip, meanface_indices,
+                                                transforms.Compose([
+                                                    transforms.RandomGrayscale(0.2),
+                                                    transforms.ToTensor(),
+                                                    normalize]))
 else:
     print('No such head:', cfg.det_head)
     exit(0)
 
-train_loader = torch.utils.data.DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=8, pin_memory=True, drop_last=True)
+train_loader = torch.utils.data.DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=0,
+                                           pin_memory=True, drop_last=True)
 
-train_model(cfg.det_head, net, train_loader, criterion_cls, criterion_reg, cfg.cls_loss_weight, cfg.reg_loss_weight, cfg.num_nb, optimizer, cfg.num_epochs, scheduler, save_dir, cfg.save_interval, device)
-
+train_model(cfg.det_head, net, train_loader, criterion_cls, criterion_reg, cfg.cls_loss_weight, cfg.reg_loss_weight,
+            cfg.num_nb, optimizer, cfg.num_epochs, scheduler, save_dir, cfg.save_interval, device)

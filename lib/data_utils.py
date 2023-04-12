@@ -18,6 +18,7 @@ def random_translate(image, target):
         e = 1
         #f = 30 #up/down (i.e. 5/-5)
         f = int((random.random()-0.5) * 60)
+        ### (a, b, c, d, e, f)两行三列的参数矩阵
         image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
         target_translate = target.copy()
         target_translate = target_translate.reshape(-1, 2)

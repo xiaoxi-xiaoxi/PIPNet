@@ -1,3 +1,4 @@
+# from detector import Detector
 from detector import Detector
 import cv2, os
 import numpy as np

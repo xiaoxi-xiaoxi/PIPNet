@@ -190,15 +190,15 @@ def process_HaGRID_mini(image_path, img_anno, target_size):
     image_height, image_width, _ = image.shape
     landmarks = img_anno['landmarks']
     if not landmarks[0]:
-        return None,None
+        return None, None
     image_crops = []
     annos = []
     for i in range(len(landmarks)):
         landmark = landmarks[i]
         if not landmark:
             continue
-        anno_x = [int(x[0]*image_width) for x in landmark]
-        anno_y = [int(x[1]*image_height) for x in landmark]
+        anno_x = [int(x[0] * image_width) for x in landmark]
+        anno_y = [int(x[1] * image_height) for x in landmark]
 
         # k = cv2.waitKey(1) & 0xFF
         #
@@ -222,11 +222,10 @@ def process_HaGRID_mini(image_path, img_anno, target_size):
         bbox_width = bbox_xmax - bbox_xmin + 1
         bbox_height = bbox_ymax - bbox_ymin + 1
 
-
         length = max(bbox_width, bbox_height) // 2
         cx = (bbox_xmin + bbox_xmax) // 2
         cy = (bbox_ymin + bbox_ymax) // 2
-        ratio = random.random()*1.25 +1.25
+        ratio = random.random() * 1.25 + 1.25
         bbox_length = max(bbox_width, bbox_height) * ratio
         bbox_xmin = max(0, cx - int(ratio * length))
         bbox_ymin = max(0, cy - int(ratio * length))
@@ -247,7 +246,7 @@ def process_HaGRID_mini(image_path, img_anno, target_size):
         # bbox_ymin = max(int(bbox_ymin), 0)
         # bbox_width = min(bbox_width, image_width - bbox_xmin - 1)
         # bbox_height = min(bbox_height, image_height - bbox_ymin - 1)
-        anno = [[(x - bbox_xmin) / bbox_length, (y - bbox_ymin) / bbox_length] for x, y in zip(anno_x,anno_y)]
+        anno = [[(x - bbox_xmin) / bbox_length, (y - bbox_ymin) / bbox_length] for x, y in zip(anno_x, anno_y)]
 
         bbox_xmax = int(bbox_xmin + bbox_length)
         bbox_ymax = int(bbox_ymin + bbox_length)
@@ -256,7 +255,57 @@ def process_HaGRID_mini(image_path, img_anno, target_size):
         image_crops.append(image_crop)
         annos.append(anno)
 
+        # draw_kp = (np.array(anno)*target_size).astype(int)
+        # # kp_draw = np.array([draw_kp[:, 1], draw_kp[:, 0]]).transpose()
+        # colors = [(0, 215, 255), (255, 115, 55), (5, 255, 55), (25, 15, 255), (225, 15, 55)]
+        # cv2.circle(image_crop, (draw_kp[0]), 2, (255, 0, 0), 1)
+        # for i in range(1, len(draw_kp)):
+        #     cv2.circle(image_crop, (draw_kp[i]), 2, colors[(i - 1) // 4], 1)
+        #
+        # cv2.namedWindow("test", 0)
+        # cv2.resizeWindow("test", 640, 480)
+        # cv2.imshow('test', image_crop)
+        # cv2.waitKey(0)
+        #
+        # cv2.destroyAllWindows()
+
     return image_crops, annos
+
+
+def process_handpose_datasets_v2(root_folder, image_name, label_name, target_size):
+    image_path = os.path.join(root_folder, image_name)
+    label_path = os.path.join(root_folder, label_name)
+
+    with open(label_path, 'r') as ff:
+        label_anno = json.load(ff)
+        kp_anno = label_anno['info'][0]['pts']
+        image = cv2.imread(image_path)
+        image_height, image_width, _ = image.shape
+        anno_x = [kp_anno[key]['x'] for key in kp_anno.keys()]
+        anno_y = [kp_anno[key]['y'] for key in kp_anno.keys()]
+        bbox_xmin = min(anno_x)
+        bbox_ymin = min(anno_y)
+        bbox_xmax = max(anno_x)
+        bbox_ymax = max(anno_y)
+        bbox_width = bbox_xmax - bbox_xmin + 1
+        bbox_height = bbox_ymax - bbox_ymin + 1
+
+        length = max(bbox_width, bbox_height) // 2
+        cx = (bbox_xmin + bbox_xmax) // 2
+        cy = (bbox_ymin + bbox_ymax) // 2
+        ratio = random.random() * 1.25 + 1.25
+        bbox_length = max(bbox_width, bbox_height) * ratio
+        bbox_xmin = max(0, cx - int(ratio * length))
+        bbox_ymin = max(0, cy - int(ratio * length))
+        bbox_width  = min(int(bbox_width*ratio),image_width)
+        bbox_height = min(int(bbox_height*ratio),image_height)
+        anno = [[(x - bbox_xmin) / bbox_width, (y - bbox_ymin) / bbox_height] for x, y in zip(anno_x, anno_y)]
+
+        bbox_xmax = bbox_xmin + bbox_width
+        bbox_ymax = bbox_ymin + bbox_height
+        image_crop = image[bbox_ymin:bbox_ymax, bbox_xmin:bbox_xmax, :]
+        image_crop = cv2.resize(image_crop, (target_size, target_size))
+        return image_crop, anno
 
 
 def gen_meanface(root_folder, data_name):
@@ -750,7 +799,7 @@ def gen_data(root_folder, data_name, target_size):
                     annos_train[image_crop_name] = annos[0]
                 else:
                     for i in range(len(image_crops)):
-                        image_crop_name = folder_train + '_' + image_name_only +'_{}.jpg'.format(i)
+                        image_crop_name = folder_train + '_' + image_name_only + '_{}.jpg'.format(i)
                         image_crop = np.ascontiguousarray(image_crops[i])
                         cv2.imwrite(os.path.join(root_folder, data_name, 'images_train', image_crop_name), image_crop)
                         annos_train[image_crop_name] = annos[i]
@@ -784,12 +833,36 @@ def gen_data(root_folder, data_name, target_size):
                     annos_test[image_crop_name] = annos[0]
                 else:
                     for i in range(len(image_crops)):
-                        image_crop_name = folder_test + '_' + image_name_only +'_{}.jpg'.format(i)
+                        image_crop_name = folder_test + '_' + image_name_only + '_{}.jpg'.format(i)
                         image_crop = np.ascontiguousarray(image_crops[i])
                         cv2.imwrite(os.path.join(root_folder, data_name, 'images_test', image_crop_name), image_crop)
                         annos_test[image_crop_name] = annos[i]
         with open(os.path.join(root_folder, data_name, 'test.txt'), 'w') as f:
             for image_crop_name, anno in annos_test.items():
+                f.write(image_crop_name + ' ')
+                for x, y in anno:
+                    f.write(str(x) + ' ' + str(y) + ' ')
+                f.write('\n')
+
+        gen_meanface(root_folder, data_name)
+
+    elif data_name == 'handpose_datasets_v2':
+        folders = os.path.join(root_folder, data_name, 'origin')
+        all_files = os.listdir(folders)
+
+        image_files = [x for x in all_files if '.json' not in x]
+        label_files = [x for x in all_files if '.json' in x]
+        assert len(image_files) == len(label_files)
+        annos_train = {}
+        for image_name, label_name in zip(image_files, label_files):
+            print(image_name)
+            image_crop, anno = process_handpose_datasets_v2(folders, image_name, label_name, target_size)
+            image_crop_name = data_name + '_' + image_name
+            cv2.imwrite(os.path.join(root_folder, data_name, 'images_train', image_crop_name), image_crop)
+            annos_train[image_crop_name] = anno
+
+        with open(os.path.join(root_folder, data_name, 'train.txt'), 'w') as f:
+            for image_crop_name, anno in annos_train.items():
                 f.write(image_crop_name + ' ')
                 for x, y in anno:
                     f.write(str(x) + ' ' + str(y) + ' ')
@@ -808,6 +881,8 @@ if __name__ == '__main__':
         print('3. WFLW')
         print('4. AFLW')
         print('5. LaPa')
+        print('6. HaGRID_mini')
+        print('7. handpose_datasets_v2')
         exit(0)
     else:
         data_name = sys.argv[1]
